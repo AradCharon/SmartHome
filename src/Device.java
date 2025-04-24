@@ -118,16 +118,18 @@ class Rule {
 }
 
 class SmartHomeSystem {
-    private Map<String, Device> devices;
+    private List<Device> devices;
+    private Map<String, Device> deviceMap;
     private List<Rule> rules;
 
     public SmartHomeSystem() {
-        devices = new LinkedHashMap<>();
+        devices = new ArrayList<>();
+        deviceMap = new HashMap<>();
         rules = new ArrayList<>();
     }
 
     public String addDevice(String type, String name, String protocol) {
-        if (devices.containsKey(name)) {
+        if (deviceMap.containsKey(name)) {
             return "duplicate device name";
         }
 
@@ -144,16 +146,17 @@ class SmartHomeSystem {
             return "invalid input";
         }
 
-        devices.put(name, device);
+        devices.add(device);
+        deviceMap.put(name, device);
         return "device added successfully";
     }
 
     public String setDevice(String name, String property, String value) {
-        if (!devices.containsKey(name)) {
+        if (!deviceMap.containsKey(name)) {
             return "device not found";
         }
 
-        Device device = devices.get(name);
+        Device device = deviceMap.get(name);
         if (!device.setProperty(property, value)) {
             if (property.equals("status") || property.equals("brightness") || property.equals("temperature")) {
                 return "invalid value";
@@ -165,11 +168,15 @@ class SmartHomeSystem {
     }
 
     public String removeDevice(String name) {
-        if (!devices.containsKey(name)) {
+        if (!deviceMap.containsKey(name)) {
             return "device not found";
         }
 
-        devices.remove(name);
+        Device device = deviceMap.get(name);
+        devices.remove(device);
+        deviceMap.remove(name);
+
+        // حذف قوانین مرتبط با دستگاه
         rules.removeIf(rule -> rule.getDeviceName().equals(name));
         return "device removed successfully";
     }
@@ -181,14 +188,14 @@ class SmartHomeSystem {
             return result;
         }
 
-        for (Device device : devices.values()) {
+        for (Device device : devices) {
             result.add(device.getInfo());
         }
         return result;
     }
 
     public String addRule(String name, String time, String action) {
-        if (!devices.containsKey(name)) {
+        if (!deviceMap.containsKey(name)) {
             return "device not found";
         }
 
@@ -216,8 +223,8 @@ class SmartHomeSystem {
         }
 
         for (Rule rule : rules) {
-            if (rule.getTime().equals(time) && devices.containsKey(rule.getDeviceName())) {
-                Device device = devices.get(rule.getDeviceName());
+            if (rule.getTime().equals(time) && deviceMap.containsKey(rule.getDeviceName())) {
+                Device device = deviceMap.get(rule.getDeviceName());
                 device.setProperty("status", rule.getAction());
             }
         }
